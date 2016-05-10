@@ -1,0 +1,410 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Data.SqlServerCe;
+using Lumex.Tech;
+using Microsoft.Ink;
+using System.Net;
+
+namespace LEDApp
+{
+    public partial class HomePage : Form
+    {
+
+        //private SqlConnection con = new SqlConnection("Data Source=LUMEX-05-PC;Initial Catalog=lmxLED;User ID=sa;Password=shv  321");
+        //private SqlCommand cmd;
+
+        public HomePage()
+        {
+            InitializeComponent();
+        }
+
+
+        ledcontrol.ILEDDevice PLed;
+        ledcontrol.ICOMExtend PCom = new ledcontrol.COMControl();
+        ledcontrol.IGPRSExtend PGprs = new ledcontrol.GPRSControl();
+        ledcontrol.GPRSDevice pgsDevice = new ledcontrol.GPRSDevice();
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (isUpdateMode)
+                {
+
+                    LumexDBPlayer db = LumexDBPlayer.Start(true);
+                    db.ExecuteNonQuery("Update Device set DeviceId='" + txtbxDeviceId.Text + "',PostCode='" +
+                            txtbxPostCode.Text + "',AreaId='" + txtbxAreaId.Text + "',UserName='" + txtbxUserName.Text + "',DeviceName='" + txtbxDeviceName.Text + "' where Id='" + hiddenField.Text + "'");
+
+                    MessageBox.Show("Device Information Updated Successfully!!!");
+                    db.Stop();
+                    txtbxDeviceId.Text = "";
+                    txtbxPostCode.Text = "";
+                    txtbxDeviceName.Text = "";
+                    txtbxUserName.Text = "";
+                    txtbxAreaId.Text = "";
+                    btnSave.Text = "Save";
+                    isUpdateMode = false;
+                    txtbxDeviceId.Enabled = true;
+                    ShowAllDevice();
+                }
+                else
+                {
+                    LumexDBPlayer db = LumexDBPlayer.Start(true);
+                    db.ExecuteNonQuery(
+                            "Insert into Device (DeviceId,PostCode,AreaId,DeviceName,UserName) values('" + txtbxDeviceId.Text + "','" +
+                            txtbxPostCode.Text + "','" + txtbxAreaId.Text + "','" + txtbxDeviceName.Text + "','" + txtbxUserName.Text + "')");
+
+                    MessageBox.Show("Device Successfully Inserted!!!");
+                    db.Stop();
+                    txtbxDeviceId.Text = "";
+                    txtbxPostCode.Text = "";
+                    txtbxDeviceName.Text = "";
+                    txtbxUserName.Text = "";
+                    txtbxAreaId.Text = "";
+                    ShowAllDisplaySetting();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void btnAddDevice_Click(object sender, EventArgs e)
+        {
+            tabControl1.SelectTab(1);
+        }
+
+        private void btnDisplaySettings_Click(object sender, EventArgs e)
+        {
+            tabControl1.SelectTab(2);
+        }
+
+        private void btnDeviceSetting_Click(object sender, EventArgs e)
+        {
+            tabControl1.SelectTab(3);
+        }
+
+        private void HomePage_Load(object sender, EventArgs e)
+        {
+            LoadDevice();
+            ShowAllDevice();
+            ShowAllDisplaySetting();
+
+        }
+
+        private void LoadDevice()
+        {
+            try
+            {
+                LumexDBPlayer db = LumexDBPlayer.Start(true);
+                DataTable dt = db.ExecuteDataTable("SELECT Id , DeviceId ,DeviceName FROM Device");
+                //SqlCommand command = new SqlCommand(query, con);
+                db.Stop();
+
+                combxDevice.DataSource = dt;
+                combxDevice.DisplayMember = "DeviceName";
+                combxDevice.ValueMember = "DeviceId";
+                combxDevice.SelectedIndex = 0;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        private void btnSaveDisplaySetting_Click(object sender, EventArgs e)
+        {
+
+            try
+            {
+                if (isUpdateMode)
+                {
+                    LumexDBPlayer db = LumexDBPlayer.Start(true);
+                    db.ExecuteNonQuery(
+                            "Update DisplaySetting SET DeviceId='" + combxDevice.SelectedValue + "',Height='" + txtbxHeight.Text + "',Width='" + txtbxWidth.Text + "',Style='" +
+                            combxStyle.SelectedValue + "',Animation='" + combxAnimation.SelectedValue + "' where Id='" + hiddenField.Text + "'");
+                    // cmd.ExecuteNonQuery();
+                    MessageBox.Show("Display Settings Updated Successfully!!!");
+                    db.Stop();
+                    combxDevice.SelectedValue = 0;
+                    combxStyle.SelectedValue = 0;
+                    combxAnimation.SelectedValue = 0;
+                    txtbxHeight.Text = "";
+                    txtbxWidth.Text = "";
+                    combxDevice.Enabled = true;
+                    btnSaveDisplaySetting.Text = "Save";
+                    ShowAllDisplaySetting();
+                }
+                else
+                {
+                    LumexDBPlayer db = LumexDBPlayer.Start(true);
+                    db.ExecuteNonQuery(
+                            "Insert into DisplaySetting (DeviceId,Height,Width,Style,Animation) values('" +
+                            combxDevice.SelectedValue + "','" + txtbxHeight.Text + "','" + txtbxWidth.Text + "','" +
+                            combxStyle.SelectedValue + "','" + combxAnimation.SelectedValue + "')");
+                    // cmd.ExecuteNonQuery();
+                    MessageBox.Show("Display Settings Successfully Inserted!!!");
+                    db.Stop();
+                    combxDevice.SelectedValue = 0;
+                    combxStyle.SelectedValue = 0;
+                    combxAnimation.SelectedValue = 0;
+                    txtbxHeight.Text = "";
+                    txtbxWidth.Text = "";
+                    ShowAllDisplaySetting();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        //public void LoadDeviceListView()
+        //{
+        //    listViewDevice.Items.Clear();
+        //    foreach (device devicelist in ShowAllDevice())
+        //    {
+        //        ListViewItem item = new ListViewItem();
+        //        item.Text = devicelist.id.ToString();
+        //        item.SubItems.Add(devicelist.DeviceId.ToString());
+        //        item.SubItems.Add(devicelist.DeviceName);
+        //        item.SubItems.Add(devicelist.UserName);
+        //        item.SubItems.Add(devicelist.PostCode);
+        //        item.SubItems.Add(devicelist.AreaId);
+        //        item.Tag = devicelist;
+        //        listViewDevice.Items.Add(item);
+        //    }
+        //}
+        public void ShowAllDevice()
+        {
+            listViewDevice.Items.Clear();
+
+
+            LumexDBPlayer db = LumexDBPlayer.Start(true);
+            DataTable dt = db.ExecuteDataTable("SELECT Id , DeviceId , UserName , PostCode , DeviceName , AreaId FROM Device");
+            db.Stop();
+
+
+            //while (dt.Rows.Count > 0)
+            //{
+            //    device aDevice = new device();
+            //    aDevice.id = (int)dt.Rows[0]["Id"];
+            //    aDevice.DeviceId = (int)dt.Rows[0]["DeviceId"];
+            //    aDevice.UserName = dt.Rows[0]["UserName"].ToString();
+            //    aDevice.PostCode = dt.Rows[0]["PostCode"].ToString(); //Password
+            //    aDevice.DeviceName = dt.Rows[0]["DeviceName"].ToString();
+            //    aDevice.AreaId = dt.Rows[0]["AreaId"].ToString();
+            //    deviceList.Add(aDevice);
+            //}
+            foreach (DataRow row in dt.Rows)
+            {
+
+                ListViewItem item = new ListViewItem(row[0].ToString());
+                for (int i = 1; i < dt.Columns.Count; i++)
+                {
+                    item.SubItems.Add(row[i].ToString());
+                }
+                listViewDevice.Items.Add(item);
+            }
+
+        }
+        private int deviceId;
+        private int displayId;
+        private bool isUpdateMode = false;
+        private void listViewDevice_DoubleClick(object sender, EventArgs e)
+        {
+            // 1. Select selected Student
+
+            ListViewItem item = listViewDevice.SelectedItems[0];
+            int id = Convert.ToInt32(item.Text);
+
+            //Selecting the Item of the list
+            LumexDBPlayer db = LumexDBPlayer.Start(true);
+            DataTable dt = db.ExecuteDataTable("SELECT Id , DeviceId , UserName , PostCode , DeviceName , AreaId FROM Device  where Id='" + id + "'");
+            //SqlCommand command = new SqlCommand(query, con);
+            db.Stop();
+            //device aDevice = (device)item.Tag;
+
+            //if (aDevice != null)
+            //{
+            //    //2. Enable update mode -- save button = update button, grab id
+
+            isUpdateMode = true;
+
+            //    deviceId = aDevice.id;
+
+
+            //    //3. Fill Text with student data 
+            btnSave.Text = "Update";
+            hiddenField.Text = dt.Rows[0]["Id"].ToString();
+
+            txtbxDeviceId.Text = dt.Rows[0]["DeviceId"].ToString();
+            txtbxDeviceName.Text = dt.Rows[0]["DeviceName"].ToString();
+            txtbxUserName.Text = dt.Rows[0]["UserName"].ToString();
+            txtbxPostCode.Text = dt.Rows[0]["PostCode"].ToString();
+            txtbxAreaId.Text = dt.Rows[0]["AreaId"].ToString();
+
+
+        }
+
+        //public void LoadDisplaySettingListView()
+        //{
+        //    listViewDisplay.Items.Clear();
+
+        //    foreach (DisplaySetting displaylist in ShowAllDisplaySetting())
+        //    {
+        //        ListViewItem item = new ListViewItem();
+        //        item.Text = displaylist.id.ToString();
+        //        item.SubItems.Add(displaylist.DeviceId.ToString());
+        //        item.SubItems.Add(displaylist.Height);
+        //        item.SubItems.Add(displaylist.Width);
+        //        item.SubItems.Add(displaylist.style);
+        //        item.SubItems.Add(displaylist.Animation);
+        //        item.Tag = displaylist;
+        //        listViewDisplay.Items.Add(item);
+        //    }
+        //}
+        public void ShowAllDisplaySetting()
+        {
+            listViewDisplay.Items.Clear();
+
+            LumexDBPlayer db = LumexDBPlayer.Start(true);
+            DataTable dt = db.ExecuteDataTable("SELECT Id , DeviceId , Height , Width , Style , Animation FROM DisplaySetting");
+
+            db.Stop();
+
+            foreach (DataRow row in dt.Rows)
+            {
+                ListViewItem item = new ListViewItem(row[0].ToString());
+                for (int i = 1; i < dt.Columns.Count; i++)
+                {
+                    item.SubItems.Add(row[i].ToString());
+                }
+                listViewDisplay.Items.Add(item);
+            }
+            //SqlDataReader reader = command.ExecuteReader();
+
+
+            //while (dt.Rows.Count > 0)
+            //{
+            //    DisplaySetting displaySetting = new DisplaySetting();
+            //    displaySetting.id = (int)dt.Rows[0]["Id"];
+            //    displaySetting.DeviceId = (int)dt.Rows[0]["DeviceId"];
+            //    displaySetting.Height = dt.Rows[0]["Height"].ToString();
+            //    displaySetting.Width = dt.Rows[0]["Width"].ToString();
+            //    displaySetting.style = dt.Rows[0]["Style"].ToString();
+            //    displaySetting.Animation = dt.Rows[0]["Animation"].ToString();
+
+
+
+            //    displayList.Add(displaySetting);
+
+
+            //}
+
+
+        }
+
+        private void listViewDisplay_DoubleClick(object sender, EventArgs e)
+        {
+
+
+            ListViewItem item = listViewDisplay.SelectedItems[0];
+            int id = Convert.ToInt32(item.Text);
+
+
+            LumexDBPlayer db = LumexDBPlayer.Start(true);
+            DataTable dt = db.ExecuteDataTable("SELECT Id , DeviceId , Height , Width , Style , Animation FROM DisplaySetting where id='" + id + "'");
+
+            db.Stop();
+
+            isUpdateMode = true;
+            btnSaveDisplaySetting.Text = "Update";
+
+            hiddenField.Text = dt.Rows[0]["Id"].ToString();
+            txtbxHeight.Text = dt.Rows[0]["Height"].ToString();
+            txtbxWidth.Text = dt.Rows[0]["Width"].ToString();
+            combxStyle.SelectedValue = dt.Rows[0]["Style"].ToString();
+            combxDevice.SelectedValue = dt.Rows[0]["DeviceId"].ToString();
+            combxAnimation.SelectedValue = dt.Rows[0]["Animation"].ToString();
+
+
+        }
+
+        private void btnLogin_Click(object sender, EventArgs e)
+        {
+            PGprs.Host = "42.121.6.228";
+            PGprs.Port = int.Parse("9099");
+            //Select Device ID User and Pass and Device serial
+            PGprs.UserName = "szlccl";
+            PGprs.PassWord = "123456";
+
+            PGprs.DeviceMgr.refresh();
+            string dn = DeviceIdcomboBox.SelectedItem.ToString(); //PGprs.DeviceMgr.Items[8]; // Put Device Serial Here 
+            //Boolean IsOnLine3 = PGprs.DeviceMgr.OnLineByIndex[8]; 
+            //Boolean IsOnLine = PGprs.DeviceMgr.OnLineByID[dn];
+
+
+            //Boolean IsOnLine1 = PGprs.DeviceMgr.get_OnLineByID(dn);
+            //Boolean IsOnLine2 = PGprs.DeviceMgr.get_OnLineByIndex(8);
+            //if (IsOnLine)
+            //    MessageBox.Show("equipment:" + dn + " Online");
+            //else
+            // Connection device object, a plurality of equipment ',' Split
+
+            PLed = PGprs.Device;
+            PGprs.TargetDeviceID = dn;// The Selected One
+        }
+
+        private void btnClearData_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                PLed.ClearScreen();
+            }
+            catch (Exception)
+            {
+
+                // throw;
+            }
+        }
+
+        private void btnGetImageFromWeb_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                WebClient webClient = new WebClient();
+                string remote = @"http://180.211.159.172/damweb/PublicPortal/commodity_name/";
+
+                string local = "";//;Server.MapPath("barcode image/TEST.jpg");
+
+                //string[] filePaths = Directory.GetFiles(path, "*.jpg");
+                webClient.DownloadFile(remote, local);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        private void tabControl1_Click(object sender, EventArgs e)
+        {
+            LoadDevice();
+        }
+
+
+
+
+
+    }
+}

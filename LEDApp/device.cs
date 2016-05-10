@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace LEDApp
+{
+    public class device
+    {
+        public int id;
+        public int DeviceId;
+        public string PostCode;
+        public string AreaId;
+        public string DeviceName;
+        public string UserName;
+        
+    }
+}

@@ -1,0 +1,378 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.SqlClient;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Data.SqlServerCe;
+
+using Microsoft.Ink;
+using System.Net;
+
+namespace LEDApp
+{
+    public partial class HomePage : Form
+    {
+
+        private SqlConnection con = new SqlConnection("Data Source=LUMEX-05-PC;Initial Catalog=lmxLED;User ID=sa;Password=shv  321");
+        private SqlCommand cmd;
+
+        public HomePage()
+        {
+            InitializeComponent();
+        }
+
+
+        ledcontrol.ILEDDevice PLed;
+        ledcontrol.ICOMExtend PCom = new ledcontrol.COMControl();
+        ledcontrol.IGPRSExtend PGprs = new ledcontrol.GPRSControl();
+        ledcontrol.GPRSDevice pgsDevice = new ledcontrol.GPRSDevice();
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (isUpdateMode)
+                {
+
+                    con.Open();
+                    cmd =
+                        new SqlCommand(
+                            "Update Device set DeviceId='" + txtbxDeviceId.Text + "',PostCode='" +
+                            txtbxPostCode.Text + "',AreaId='" + txtbxAreaId.Text + "'", con);
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Device Information Updated Successfully!!!");
+                    con.Close();
+                    txtbxDeviceId.Text = "";
+                    txtbxPostCode.Text = "";
+                    txtbxAreaId.Text = "";
+                    btnSave.Text = "Save";
+                    isUpdateMode = false;
+                    LoadDeviceListView();
+                }
+                else
+                {
+                    con.Open();
+                    cmd =
+                        new SqlCommand(
+                            "Insert into Device (DeviceId,PostCode,AreaId) values('" + txtbxDeviceId.Text + "','" +
+                            txtbxPostCode.Text + "','" + txtbxAreaId.Text + "')", con);
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Device Successfully Inserted!!!");
+                    con.Close();
+                    txtbxDeviceId.Text = "";
+                    txtbxPostCode.Text = "";
+                    txtbxAreaId.Text = "";
+                    LoadDeviceListView();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void btnAddDevice_Click(object sender, EventArgs e)
+        {
+            tabControl1.SelectTab(1);
+        }
+
+        private void btnDisplaySettings_Click(object sender, EventArgs e)
+        {
+            tabControl1.SelectTab(2);
+        }
+
+        private void btnDeviceSetting_Click(object sender, EventArgs e)
+        {
+            tabControl1.SelectTab(3);
+        }
+
+        private void HomePage_Load(object sender, EventArgs e)
+        {
+            // TODO: This line of code loads data into the 'lmxLEDDataSet.Device' table. You can move, or remove it, as needed.
+            this.deviceTableAdapter.Fill(this.lmxLEDDataSet.Device);
+            LoadDeviceListView();
+            LoadDisplaySettingListView();
+
+        }
+
+        private void btnSaveDisplaySetting_Click(object sender, EventArgs e)
+        {
+
+            try
+            {
+                if (isUpdateMode)
+                {
+                    con.Open();
+                    cmd =
+                        new SqlCommand(
+                            "Update DisplaySetting DeviceId='" + combxDevice.SelectedValue + "',Height='" + txtbxHeight.Text + "',Width='" + txtbxWidth.Text + "',Style='" +
+                            combxStyle.SelectedValue + "',Animation='" + combxAnimation.SelectedValue + "'", con);
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Display Settings Updated Successfully!!!");
+                    con.Close();
+                    combxDevice.SelectedValue = 0;
+                    combxStyle.SelectedValue = 0;
+                    combxAnimation.SelectedValue = 0;
+                    txtbxHeight.Text = "";
+                    txtbxWidth.Text = "";
+                    LoadDisplaySettingListView();
+                }
+                else
+                {
+                    con.Open();
+                    cmd =
+                        new SqlCommand(
+                            "Insert into DisplaySetting (DeviceId,Height,Width,Style,Animation) values('" +
+                            combxDevice.SelectedValue + "','" + txtbxHeight.Text + "','" + txtbxWidth.Text + "','" +
+                            combxStyle.SelectedValue + "','" + combxAnimation.SelectedValue + "')", con);
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Display Settings Successfully Inserted!!!");
+                    con.Close();
+                    combxDevice.SelectedValue = 0;
+                    combxStyle.SelectedValue = 0;
+                    combxAnimation.SelectedValue = 0;
+                    txtbxHeight.Text = "";
+                    txtbxWidth.Text = "";
+                    LoadDisplaySettingListView();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        public void LoadDeviceListView()
+        {
+            listViewDevice.Items.Clear();
+            foreach (device devicelist in ShowAllDevice())
+            {
+                ListViewItem item = new ListViewItem();
+                item.Text = devicelist.id.ToString();
+                item.SubItems.Add(devicelist.DeviceId.ToString());
+                item.SubItems.Add(devicelist.PostCode);
+                item.SubItems.Add(devicelist.AreaId);
+                item.Tag = devicelist;
+                listViewDevice.Items.Add(item);
+            }
+        }
+        public List<device> ShowAllDevice()
+        {
+
+            //2. write query 
+            List<device> deviceList = new List<device>();
+
+            string query = "SELECT * FROM Device";
+
+
+            // 3. execute query 
+
+            SqlCommand command = new SqlCommand(query, con);
+            con.Open();
+            SqlDataReader reader = command.ExecuteReader();
+
+            List<string> DeviceList = new List<string>();
+
+            while (reader.Read())
+            {
+                device aDevice = new device();
+                aDevice.id = (int)reader["Id"];
+                aDevice.DeviceId = (int)reader["DeviceId"];
+                aDevice.PostCode = reader["PostCode"].ToString();
+                aDevice.AreaId = reader["AreaId"].ToString();
+
+
+                deviceList.Add(aDevice);
+
+
+            }
+            reader.Close();
+            con.Close();
+
+            // populate list view with data 
+            return deviceList;
+
+        }
+        private int deviceId;
+        private int displayId;
+        private bool isUpdateMode = false;
+        private void listViewDevice_DoubleClick(object sender, EventArgs e)
+        {
+            // 1. Select selected Student
+
+            ListViewItem item = listViewDevice.SelectedItems[0];
+
+            //Selecting the Item of the list
+            device aDevice = (device)item.Tag;
+
+            if (aDevice != null)
+            {
+                //2. Enable update mode -- save button = update button, grab id
+
+                isUpdateMode = true;
+                deviceId = aDevice.id;
+
+                btnSave.Text = "Update";
+
+                //3. Fill Text with student data 
+
+                txtbxDeviceId.Text = aDevice.DeviceId.ToString();
+                txtbxPostCode.Text = aDevice.PostCode;
+                txtbxAreaId.Text = aDevice.AreaId;
+
+            }
+        }
+
+        public void LoadDisplaySettingListView()
+        {
+            listViewDisplay.Items.Clear();
+
+            foreach (DisplaySetting displaylist in ShowAllDisplaySetting())
+            {
+                ListViewItem item = new ListViewItem();
+                item.Text = displaylist.id.ToString();
+                item.SubItems.Add(displaylist.DeviceId.ToString());
+                item.SubItems.Add(displaylist.Height);
+                item.SubItems.Add(displaylist.Width);
+                item.SubItems.Add(displaylist.style);
+                item.SubItems.Add(displaylist.Animation);
+                item.Tag = displaylist;
+                listViewDisplay.Items.Add(item);
+            }
+        }
+        public List<DisplaySetting> ShowAllDisplaySetting()
+        {
+
+            //2. write query 
+            List<DisplaySetting> displayList = new List<DisplaySetting>();
+
+            string query = "SELECT * FROM DisplaySetting";
+
+
+            // 3. execute query 
+
+            SqlCommand command = new SqlCommand(query, con);
+            con.Open();
+            SqlDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                DisplaySetting displaySetting = new DisplaySetting();
+                displaySetting.id = (int)reader["Id"];
+                displaySetting.DeviceId = (int)reader["DeviceId"];
+                displaySetting.Height = reader["Height"].ToString();
+                displaySetting.Width = reader["Width"].ToString();
+                displaySetting.style = reader["Style"].ToString();
+                displaySetting.Animation = reader["Animation"].ToString();
+
+
+
+                displayList.Add(displaySetting);
+
+
+            }
+            reader.Close();
+            con.Close();
+
+            // populate list view with data 
+            return displayList;
+
+        }
+
+        private void listViewDisplay_DoubleClick(object sender, EventArgs e)
+        {
+            // 1. Select selected Student
+
+            ListViewItem item = listViewDisplay.SelectedItems[0];
+
+            //Selecting the Item of the list
+            DisplaySetting aDisplaySetting = (DisplaySetting)item.Tag;
+
+            if (aDisplaySetting != null)
+            {
+                //2. Enable update mode -- save button = update button, grab id
+
+                isUpdateMode = true;
+                displayId = aDisplaySetting.id;
+
+                btnSave.Text = "Update";
+
+                //3. Fill Text with student data 
+
+
+                txtbxHeight.Text = aDisplaySetting.Height;
+                txtbxWidth.Text = aDisplaySetting.Width;
+                combxStyle.SelectedValue = aDisplaySetting.style;
+                combxDevice.SelectedValue = aDisplaySetting.DeviceId;
+                combxAnimation.SelectedValue = aDisplaySetting.Animation;
+
+            }
+        }
+
+        private void btnLogin_Click(object sender, EventArgs e)
+        {
+            PGprs.Host = "42.121.6.228";
+            PGprs.Port = int.Parse("9099");
+            //Select Device ID User and Pass and Device serial
+            PGprs.UserName = "szlccl";
+            PGprs.PassWord = "123456";
+
+            PGprs.DeviceMgr.refresh();
+            string dn = DeviceIdcomboBox.SelectedItem.ToString(); //PGprs.DeviceMgr.Items[8]; // Put Device Serial Here 
+            //Boolean IsOnLine3 = PGprs.DeviceMgr.OnLineByIndex[8]; 
+            //Boolean IsOnLine = PGprs.DeviceMgr.OnLineByID[dn];
+
+
+            //Boolean IsOnLine1 = PGprs.DeviceMgr.get_OnLineByID(dn);
+            //Boolean IsOnLine2 = PGprs.DeviceMgr.get_OnLineByIndex(8);
+            //if (IsOnLine)
+            //    MessageBox.Show("equipment:" + dn + " Online");
+            //else
+            // Connection device object, a plurality of equipment ',' Split
+
+            PLed = PGprs.Device;
+            PGprs.TargetDeviceID = dn;// The Selected One
+        }
+
+        private void btnClearData_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                PLed.ClearScreen();
+            }
+            catch (Exception)
+            {
+
+                // throw;
+            }
+        }
+
+        private void btnGetImageFromWeb_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                WebClient webClient = new WebClient();
+                string remote = @"http://180.211.159.172/damweb/PublicPortal/commodity_name/";
+
+                string local = "";//;Server.MapPath("barcode image/TEST.jpg");
+
+                //string[] filePaths = Directory.GetFiles(path, "*.jpg");
+                webClient.DownloadFile(remote, local);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+
+
+
+
+    }
+}

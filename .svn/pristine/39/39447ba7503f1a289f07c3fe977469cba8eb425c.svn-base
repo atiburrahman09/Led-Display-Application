@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <configSections>
+    </configSections>
+    <connectionStrings>
+        <!--<add name="LEDApp.Properties.Settings.lmxLEDConnectionString"
+            connectionString="Data Source=LUMEX-05-PC;Initial Catalog=lmxLED;User ID=sa Password=shv  321"
+            providerName="System.Data.SqlClient" />-->
+      <add name="LumexDBConString" connectionString="Server=LUMEX-05-PC;Database=lmxLED;Persist Security Info=true;Uid=sa;Password=shv  321;Max Pool Size=20000;" />
+    </connectionStrings>
+  <runtime>
+    <assemblyBinding xmlns="urn:schemas-microsoft-com:asm.v1">
+      <dependentAssembly>
+        <assemblyIdentity name="System.Data.SqlServerCe" publicKeyToken="89845dcd8080cc91" culture="neutral" />
+        <bindingRedirect oldVersion="0.0.0.0-4.0.0.0" newVersion="4.0.0.0" />
+      </dependentAssembly>
+    </assemblyBinding>
+  </runtime>
+</configuration>
