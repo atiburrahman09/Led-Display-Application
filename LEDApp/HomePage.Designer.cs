@@ -583,6 +583,7 @@
             this.label10.Size = new System.Drawing.Size(62, 13);
             this.label10.TabIndex = 18;
             this.label10.Text = "Animation : ";
+            this.label10.Visible = false;
             // 
             // combxAnimation
             // 
@@ -595,6 +596,7 @@
             this.combxAnimation.Name = "combxAnimation";
             this.combxAnimation.Size = new System.Drawing.Size(460, 21);
             this.combxAnimation.TabIndex = 17;
+            this.combxAnimation.Visible = false;
             // 
             // label9
             // 
@@ -604,6 +606,7 @@
             this.label9.Size = new System.Drawing.Size(39, 13);
             this.label9.TabIndex = 16;
             this.label9.Text = "Style : ";
+            this.label9.Visible = false;
             // 
             // combxStyle
             // 
@@ -616,6 +619,7 @@
             this.combxStyle.Name = "combxStyle";
             this.combxStyle.Size = new System.Drawing.Size(460, 21);
             this.combxStyle.TabIndex = 15;
+            this.combxStyle.Visible = false;
             // 
             // txtbxWidth
             // 

@@ -41,7 +41,7 @@ namespace LEDApp
 
         // object used for safe access
         object lockObject = new object();
-        //RegistryKey add = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+        RegistryKey add = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
 
         private bool IsRunAsAdministrator()
         {
@@ -54,7 +54,10 @@ namespace LEDApp
         public HomePage()
         {
             InitializeComponent();
-           // add.SetValue("LEDApp", "\"" + Application.ExecutablePath.ToString() + "\"");
+            add.SetValue("LEDApp", "\"" + Application.ExecutablePath.ToString() + "\"");
+
+
+           
             //if (!IsRunAsAdministrator())
             //{
             //    var processInfo = new ProcessStartInfo(Assembly.GetExecutingAssembly().CodeBase);
@@ -99,6 +102,7 @@ namespace LEDApp
             bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bg_RunWorkerCompleted);
             bgWorker.RunWorkerAsync();
 
+           // Application.Exit();
             //tmrCallBgWorker.Start();
         }
         void bg_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -524,51 +528,59 @@ namespace LEDApp
         }
         private void btnLogin_Click(object sender, EventArgs e)
         {
-
-            PGprs = new ledcontrol.GPRSControl();
-
-            //DataTable dt = GetUserPassWordByDeviceId(DeviceId);//previous loginDeviceId.selectedValue
-            // DataTable dtTime = GetHeightWidth(logInDeviceComBx.SelectedValue);
-            // ScheduleTime = Convert.ToInt32(dtTime.Rows[0]["ScheduleTime"].ToString());
-
-            PGprs.Host = System.Configuration.ConfigurationManager.AppSettings["Host"];//"42.121.6.228";
-            PGprs.Port = int.Parse(System.Configuration.ConfigurationManager.AppSettings["Port"]);//int.Parse("9099");
-
-
-            //Select Device ID User and Pass and Device serial
-
-
-            PGprs.UserName = userName;//dt.Rows[0]["UserName"].ToString();//"szlccl";
-            PGprs.PassWord = password;//dt.Rows[0]["PostCode"].ToString();//"123456";
-            //logInDeviceComBx.SelectedValue = DeviceId;
-
-            PGprs.DeviceMgr.refresh();
-            string dn = (DeviceId).ToString();//PGprs.DeviceMgr.Items[8]; // Put Device Serial Here //previous loginDeviceId.selectedValue
-            Boolean IsOnLine3 = PGprs.DeviceMgr.OnLineByIndex[8];
-            Boolean IsOnLine = PGprs.DeviceMgr.OnLineByID[dn];
-
-            if (!IsOnLine)
+            try
             {
-                lblVerify.Text = "✓";
-                lblVerify.ForeColor = Color.Green;
+                PGprs = new ledcontrol.GPRSControl();
+
+                //DataTable dt = GetUserPassWordByDeviceId(DeviceId);//previous loginDeviceId.selectedValue
+                // DataTable dtTime = GetHeightWidth(logInDeviceComBx.SelectedValue);
+                // ScheduleTime = Convert.ToInt32(dtTime.Rows[0]["ScheduleTime"].ToString());
+
+                PGprs.Host = System.Configuration.ConfigurationManager.AppSettings["Host"];//"42.121.6.228";
+                PGprs.Port = int.Parse(System.Configuration.ConfigurationManager.AppSettings["Port"]);//int.Parse("9099");
+
+
+                //Select Device ID User and Pass and Device serial
+
+
+                PGprs.UserName = userName;//dt.Rows[0]["UserName"].ToString();//"szlccl";
+                PGprs.PassWord = password;//dt.Rows[0]["PostCode"].ToString();//"123456";
+                //logInDeviceComBx.SelectedValue = DeviceId;
+
+                PGprs.DeviceMgr.refresh();
+                string dn = (DeviceId).ToString();//PGprs.DeviceMgr.Items[8]; // Put Device Serial Here //previous loginDeviceId.selectedValue
+                Boolean IsOnLine3 = PGprs.DeviceMgr.OnLineByIndex[8];
+                Boolean IsOnLine = PGprs.DeviceMgr.OnLineByID[dn];
+
+                if (!IsOnLine)
+                {
+                    lblVerify.Text = "✓";
+                    lblVerify.ForeColor = Color.Green;
+                }
+                else
+                {
+                    lblVerify.Text = "X";
+                    lblVerify.ForeColor = Color.Red;
+                }
+                //Boolean IsOnLine1 = PGprs.DeviceMgr.get_OnLineByID(dn);
+                //Boolean IsOnLine2 = PGprs.DeviceMgr.get_OnLineByIndex(8);
+                //if (IsOnLine)
+                //    MessageBox.Show("equipment:" + dn + " Online");
+                //else
+                // Connection device object, a plurality of equipment ',' Split
+
+                PLed = PGprs.Device;
+                PGprs.TargetDeviceID = dn;// The Selected One
+
+
+
             }
-            else
+            catch (Exception ex)
             {
-                lblVerify.Text = "X";
-                lblVerify.ForeColor = Color.Red;
+               // WriteToLogFile("Error from Clear Data" + ex.ToString(), logFile);
+                throw;
             }
-            //Boolean IsOnLine1 = PGprs.DeviceMgr.get_OnLineByID(dn);
-            //Boolean IsOnLine2 = PGprs.DeviceMgr.get_OnLineByIndex(8);
-            //if (IsOnLine)
-            //    MessageBox.Show("equipment:" + dn + " Online");
-            //else
-            // Connection device object, a plurality of equipment ',' Split
-
-            PLed = PGprs.Device;
-            PGprs.TargetDeviceID = dn;// The Selected One
-
-
-
+            
 
 
         }
@@ -589,9 +601,9 @@ namespace LEDApp
             {
                 PLed.ClearScreen();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                WriteToLogFile("Error from Clear Data" + ex.ToString() , logFile);
                 // throw;
             }
         }
@@ -1036,10 +1048,10 @@ namespace LEDApp
                 MessageBox.Show("Data Send Successfully for Device : " + DeviceId);
             }
 
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                MessageBox.Show("Data Send Failed");
+                WriteToLogFile("Error from dual data send" + ex.ToString(), logFile);
+                //MessageBox.Show("Data Send Failed");
             }
         }
 
