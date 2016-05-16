@@ -78,14 +78,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="LEDApp.exe" size="47616">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="LEDApp.exe" size="51712">
       <assemblyIdentity name="LEDApp" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-        <dsig:DigestValue>CfTOxvaZnv15NpkzsDomjs96kRk=</dsig:DigestValue>
+        <dsig:DigestValue>q86euZIzOA+aBCDLaAmfLHb2tso=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -137,13 +137,13 @@
       </hash>
     </dependentAssembly>
   </dependency>
-  <file name="LEDApp.exe.config" size="2468">
+  <file name="LEDApp.exe.config" size="2655">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
       </dsig:Transforms>
       <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-      <dsig:DigestValue>FDRmM5VP31y0J7SwCiSFEzJSMuk=</dsig:DigestValue>
+      <dsig:DigestValue>Lo+uquZla86OGl1ZlBqaZTAm/+s=</dsig:DigestValue>
     </hash>
   </file>
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">

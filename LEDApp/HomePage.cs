@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Text;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Security.Principal;
 using System.Text;
@@ -42,7 +44,7 @@ namespace LEDApp
         // object used for safe access
         object lockObject = new object();
         RegistryKey add = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
-
+        private bool CheckClick = false;
         private bool IsRunAsAdministrator()
         {
             var wi = WindowsIdentity.GetCurrent();
@@ -51,59 +53,103 @@ namespace LEDApp
             return wp.IsInRole(WindowsBuiltInRole.Administrator);
         }
 
+        
+
+        SqlConnection conn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["AppKey"].ConnectionString);
         public HomePage()
         {
             InitializeComponent();
-            add.SetValue("LEDApp", "\"" + Application.ExecutablePath.ToString() + "\"");
+            string AppKeyStatic = "KxYU-LUm3-Ts34-XSOP";
+              string AppKeyFromDB = "";
+            string status="";
+            string Mac = "";
 
 
-           
-            //if (!IsRunAsAdministrator())
-            //{
-            //    var processInfo = new ProcessStartInfo(Assembly.GetExecutingAssembly().CodeBase);
+            NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+            String sMacAddress = string.Empty;
+            foreach (NetworkInterface adapter in nics)
+            {
+                if (sMacAddress == String.Empty)// only return MAC Address from first card  
+                {
+                    //IPInterfaceProperties properties = adapter.GetIPProperties(); Line is not required
+                    sMacAddress = adapter.GetPhysicalAddress().ToString();
+                }
+            }
 
-            //    // The following properties run the new process as administrator
-            //    processInfo.UseShellExecute = true;
-            //    processInfo.Verb = "runas";
+            
+            conn.Open();
 
-            //    // Start the new process
-            //    try
-            //    {
-            //        Process.Start(processInfo);
-                   
-            //    }
-            //    catch (Exception)
-            //    {
-            //        // The user did not allow the application to run as administrator
-            //        MessageBox.Show("Sorry, this application must be run as Administrator.");
-                   
-            //    }
-            //    //System.Windows.Application.Current.Shutdown(0);
-            //    // Shut down the current process
-            //   //System.Environment.Exit(0);
-                
-            //}
+            string query = "SELECT * FROM [dbo].[AppsKey]";
+            SqlCommand cmd = new SqlCommand(query, conn);
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            conn.Close();
+            foreach (DataRow row in dt.Rows)
+            {
+                AppKeyFromDB = row["AppKey"].ToString();
+                status = row["Status"].ToString();
+                Mac = row["Mac"].ToString();
+            }
 
-          
-          
-            //         Registry.SetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run","SyncData-TPSS",
-            //Application.ExecutablePath.ToString());
+            if (Mac=="" && status=="Yes")
+            {
+                conn.Open();
 
-            // this is our worker
-            bgWorker = new BackgroundWorker();
-            table.Columns.Add(new DataColumn("Id"));
-            table.Columns.Add(new DataColumn("Url"));
-            table.Columns.Add(new DataColumn("ScheduleTime"));
-            table.Columns.Add(new DataColumn("UserName"));
-            table.Columns.Add(new DataColumn("Password"));
-            // work happens in this method
-            bgWorker.DoWork += new DoWorkEventHandler(bg_DoWork);
+                query = "Update [dbo].[AppsKey] Set Mac='" + sMacAddress + "'";
+                cmd = new SqlCommand(query, conn);
+                SqlDataReader reader = cmd.ExecuteReader();
 
-            bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bg_RunWorkerCompleted);
-            bgWorker.RunWorkerAsync();
+                add.SetValue("LEDApp", "\"" + Application.ExecutablePath.ToString() + "\"");
 
-           // Application.Exit();
-            //tmrCallBgWorker.Start();
+
+                // this is our worker
+                bgWorker = new BackgroundWorker();
+                table.Columns.Add(new DataColumn("Id"));
+                table.Columns.Add(new DataColumn("Url"));
+                table.Columns.Add(new DataColumn("ScheduleTime"));
+                table.Columns.Add(new DataColumn("UserName"));
+                table.Columns.Add(new DataColumn("Password"));
+                // work happens in this method
+                bgWorker.DoWork += new DoWorkEventHandler(bg_DoWork);
+
+                bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bg_RunWorkerCompleted);
+                bgWorker.RunWorkerAsync();
+
+                // Application.Exit();
+                //tmrCallBgWorker.Start();
+            }
+            else
+            {
+                if (sMacAddress==Mac && AppKeyStatic==AppKeyFromDB && status=="Yes")
+                {
+                    add.SetValue("LEDApp", "\"" + Application.ExecutablePath.ToString() + "\"");
+
+
+                    // this is our worker
+                    bgWorker = new BackgroundWorker();
+                    table.Columns.Add(new DataColumn("Id"));
+                    table.Columns.Add(new DataColumn("Url"));
+                    table.Columns.Add(new DataColumn("ScheduleTime"));
+                    table.Columns.Add(new DataColumn("UserName"));
+                    table.Columns.Add(new DataColumn("Password"));
+                    // work happens in this method
+                    bgWorker.DoWork += new DoWorkEventHandler(bg_DoWork);
+
+                    bgWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(bg_RunWorkerCompleted);
+                    bgWorker.RunWorkerAsync();
+
+                    // Application.Exit();
+                    //tmrCallBgWorker.Start();
+                }
+                else
+                {
+                    Process.GetCurrentProcess().Kill();
+                    //Application.Exit();
+                }
+            }
+
+            
         }
         void bg_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
@@ -139,7 +185,7 @@ namespace LEDApp
 
             table.Clear();
             //Process.GetCurrentProcess().Kill();
-
+           
 
             try
             {
@@ -180,7 +226,7 @@ namespace LEDApp
                 SleepTime = Convert.ToInt32(ScheduleTime) * 60 * 1000;
                 for (int i = 0; i < table.Rows.Count; i++)
                 {
-
+                    CheckClick = true;
                     DeviceId = table.Rows[i]["Id"].ToString();
                     Url = table.Rows[i]["Url"].ToString();
                     ScheduleTime = table.Rows[i]["ScheduleTime"].ToString();
@@ -197,7 +243,7 @@ namespace LEDApp
                     this.btnSendDuelLine.Invoke(new MethodInvoker(() => InvokeOnClick(btnSendDuelLine, EventArgs.Empty)));
 
                 }
-
+                CheckClick = false;
                 Thread.Sleep(SleepTime);
 
 
@@ -530,55 +576,103 @@ namespace LEDApp
         {
             try
             {
-                PGprs = new ledcontrol.GPRSControl();
-
-                //DataTable dt = GetUserPassWordByDeviceId(DeviceId);//previous loginDeviceId.selectedValue
-                // DataTable dtTime = GetHeightWidth(logInDeviceComBx.SelectedValue);
-                // ScheduleTime = Convert.ToInt32(dtTime.Rows[0]["ScheduleTime"].ToString());
-
-                PGprs.Host = System.Configuration.ConfigurationManager.AppSettings["Host"];//"42.121.6.228";
-                PGprs.Port = int.Parse(System.Configuration.ConfigurationManager.AppSettings["Port"]);//int.Parse("9099");
-
-
-                //Select Device ID User and Pass and Device serial
-
-
-                PGprs.UserName = userName;//dt.Rows[0]["UserName"].ToString();//"szlccl";
-                PGprs.PassWord = password;//dt.Rows[0]["PostCode"].ToString();//"123456";
-                //logInDeviceComBx.SelectedValue = DeviceId;
-
-                PGprs.DeviceMgr.refresh();
-                string dn = (DeviceId).ToString();//PGprs.DeviceMgr.Items[8]; // Put Device Serial Here //previous loginDeviceId.selectedValue
-                Boolean IsOnLine3 = PGprs.DeviceMgr.OnLineByIndex[8];
-                Boolean IsOnLine = PGprs.DeviceMgr.OnLineByID[dn];
-
-                if (!IsOnLine)
+                if (CheckClick) //To Check If its Click or Automated
                 {
-                    lblVerify.Text = "✓";
-                    lblVerify.ForeColor = Color.Green;
+                    PGprs = new ledcontrol.GPRSControl();
+
+                    //DataTable dt = GetUserPassWordByDeviceId(DeviceId);//previous loginDeviceId.selectedValue
+                    // DataTable dtTime = GetHeightWidth(logInDeviceComBx.SelectedValue);
+                    // ScheduleTime = Convert.ToInt32(dtTime.Rows[0]["ScheduleTime"].ToString());
+
+                    PGprs.Host = System.Configuration.ConfigurationManager.AppSettings["Host"];//"42.121.6.228";
+                    PGprs.Port = int.Parse(System.Configuration.ConfigurationManager.AppSettings["Port"]);//int.Parse("9099");
+
+
+                    //Select Device ID User and Pass and Device serial
+
+
+                    PGprs.UserName = userName;//dt.Rows[0]["UserName"].ToString();//"szlccl";
+                    PGprs.PassWord = password;//dt.Rows[0]["PostCode"].ToString();//"123456";
+                    //logInDeviceComBx.SelectedValue = DeviceId;
+
+                    PGprs.DeviceMgr.refresh();
+                    string dn = (DeviceId).ToString();//PGprs.DeviceMgr.Items[8]; // Put Device Serial Here //previous loginDeviceId.selectedValue
+                    Boolean IsOnLine3 = PGprs.DeviceMgr.OnLineByIndex[8];
+                    Boolean IsOnLine = PGprs.DeviceMgr.OnLineByID[dn];
+
+                    if (!IsOnLine)
+                    {
+                        lblVerify.Text = "✓";
+                        lblVerify.ForeColor = Color.Green;
+                    }
+                    else
+                    {
+                        lblVerify.Text = "X";
+                        lblVerify.ForeColor = Color.Red;
+                    }
+                    //Boolean IsOnLine1 = PGprs.DeviceMgr.get_OnLineByID(dn);
+                    //Boolean IsOnLine2 = PGprs.DeviceMgr.get_OnLineByIndex(8);
+                    //if (IsOnLine)
+                    //    MessageBox.Show("equipment:" + dn + " Online");
+                    //else
+                    // Connection device object, a plurality of equipment ',' Split
+
+                    PLed = PGprs.Device;
+                    PGprs.TargetDeviceID = dn;// The Selected One
+
                 }
                 else
                 {
-                    lblVerify.Text = "X";
-                    lblVerify.ForeColor = Color.Red;
+                    PGprs = new ledcontrol.GPRSControl();
+
+                    //DataTable dt = GetUserPassWordByDeviceId(DeviceId);//previous loginDeviceId.selectedValue
+                    // DataTable dtTime = GetHeightWidth(logInDeviceComBx.SelectedValue);
+                    // ScheduleTime = Convert.ToInt32(dtTime.Rows[0]["ScheduleTime"].ToString());
+
+                    PGprs.Host = System.Configuration.ConfigurationManager.AppSettings["Host"];//"42.121.6.228";
+                    PGprs.Port = int.Parse(System.Configuration.ConfigurationManager.AppSettings["Port"]);//int.Parse("9099");
+
+
+                    //Select Device ID User and Pass and Device serial
+
+                    DataTable dt = GetUserPassWordByDeviceId(logInDeviceComBx.SelectedValue);
+                    PGprs.UserName = dt.Rows[0]["UserName"].ToString();//"szlccl";
+                    PGprs.PassWord = dt.Rows[0]["PostCode"].ToString();//"123456";
+                    //logInDeviceComBx.SelectedValue = DeviceId;
+
+                    PGprs.DeviceMgr.refresh();
+                    string dn = (logInDeviceComBx.SelectedValue).ToString();//PGprs.DeviceMgr.Items[8]; // Put Device Serial Here //previous loginDeviceId.selectedValue
+                    Boolean IsOnLine3 = PGprs.DeviceMgr.OnLineByIndex[8];
+                    Boolean IsOnLine = PGprs.DeviceMgr.OnLineByID[dn];
+
+                    if (!IsOnLine)
+                    {
+                        lblVerify.Text = "✓";
+                        lblVerify.ForeColor = Color.Green;
+                    }
+                    else
+                    {
+                        lblVerify.Text = "X";
+                        lblVerify.ForeColor = Color.Red;
+                    }
+                    //Boolean IsOnLine1 = PGprs.DeviceMgr.get_OnLineByID(dn);
+                    //Boolean IsOnLine2 = PGprs.DeviceMgr.get_OnLineByIndex(8);
+                    //if (IsOnLine)
+                    //    MessageBox.Show("equipment:" + dn + " Online");
+                    //else
+                    // Connection device object, a plurality of equipment ',' Split
+
+                    PLed = PGprs.Device;
+                    PGprs.TargetDeviceID = dn;// The Selected One
                 }
-                //Boolean IsOnLine1 = PGprs.DeviceMgr.get_OnLineByID(dn);
-                //Boolean IsOnLine2 = PGprs.DeviceMgr.get_OnLineByIndex(8);
-                //if (IsOnLine)
-                //    MessageBox.Show("equipment:" + dn + " Online");
-                //else
-                // Connection device object, a plurality of equipment ',' Split
-
-                PLed = PGprs.Device;
-                PGprs.TargetDeviceID = dn;// The Selected One
-
+                
 
 
             }
             catch (Exception ex)
             {
-               // WriteToLogFile("Error from Clear Data" + ex.ToString(), logFile);
-                throw;
+                WriteToLogFile("Error from Clear Data" + ex.ToString(), logFile);
+               // throw;
             }
             
 
@@ -588,7 +682,7 @@ namespace LEDApp
         private DataTable GetUserPassWordByDeviceId(object p)
         {
             LumexDBPlayer db = LumexDBPlayer.Start(true);
-            DataTable dt = db.ExecuteDataTable("SELECT Id , DeviceId , UserName , PostCode , DeviceName FROM Device Where DeviceId='" + p + "'");
+            DataTable dt = db.ExecuteDataTable("SELECT Id , DeviceId , UserName , PostCode ,AreaId, DeviceName FROM Device Where DeviceId='" + p + "'");
             //SqlCommand command = new SqlCommand(query, con);
             db.Stop();
 
@@ -652,92 +746,174 @@ namespace LEDApp
                 // string source = x.DownloadString(@"http://180.211.159.172/damweb/PublicPortal/commodity_name/");
                 //string source = x.DownloadString(ImageUrl);
 
-
-
-                //writer.WriteLine("Into the getImageFromWeb Method");
-                WriteToLogFile("Into the getImageFromWeb Method", logFile);
-
-
-
-                string source = x.DownloadString(Url);
-                //writer.WriteLine("Download Source using URL");
-                WriteToLogFile("Download Source using URL", logFile);
-
-                Url = source;
-                HtmlAgilityPack.HtmlDocument document = new HtmlAgilityPack.HtmlDocument();
-                document.LoadHtml(source);
-                source = x.DownloadString(document.DocumentNode.InnerHtml);
-                document.LoadHtml(source);
-                ImageList.Clear();
-
-                foreach (HtmlNode link in document.DocumentNode.SelectNodes("//a"))
+                if (CheckClick) //To Check If its Click or Automated
                 {
+                    //writer.WriteLine("Into the getImageFromWeb Method");
+                    WriteToLogFile("Into the getImageFromWeb Method", logFile);
 
-                    if (link.InnerHtml.Contains(".jpeg"))
+
+
+                    string source = x.DownloadString(Url);
+                    //writer.WriteLine("Download Source using URL");
+                    WriteToLogFile("Download Source using URL", logFile);
+
+                    Url = source;
+                    HtmlAgilityPack.HtmlDocument document = new HtmlAgilityPack.HtmlDocument();
+                    document.LoadHtml(source);
+                    source = x.DownloadString(document.DocumentNode.InnerHtml);
+                    document.LoadHtml(source);
+                    ImageList.Clear();
+
+                    foreach (HtmlNode link in document.DocumentNode.SelectNodes("//a"))
                     {
-                        ImageList.Add(link.InnerHtml);
-                    }
 
-                }
-                //writer.WriteLine("Image added to the ImageList");
-                WriteToLogFile("Image added to the ImageList", logFile);
-
-                string currentPath = Directory.GetCurrentDirectory();
-                DateTime.Now.ToShortDateString();
-
-                string newPath = DateTime.Now.ToString("dd-MM-yyyy");
-                WriteToLogFile("New Path Created" + newPath, logFile);
-
-                if (!Directory.Exists(Path.Combine(currentPath, newPath, DeviceId)))
-                {
-                    Directory.CreateDirectory(Path.Combine(currentPath, newPath, DeviceId));
-
-                    // writer.WriteLine("Image Folder Created");
-                    WriteToLogFile("Image Folder Created", logFile);
-
-
-                    foreach (string name in ImageList)
-                    {
-                        WebClient webClient = new WebClient();
-                        //string url = "http://180.211.159.172/damweb/PublicPortal/commodity_name/" + name;
-                        //string url = ImageUrl + name;
-                        string url = Url + @"/" + name;
-                        string path = currentPath + @"\" + newPath + @"\" + DeviceId + @"\";
-                        webClient.DownloadFile(url, path + name);
+                        if (link.InnerHtml.Contains(".jpeg"))
+                        {
+                            ImageList.Add(link.InnerHtml);
+                        }
 
                     }
-                    WriteToLogFile("Image download Completed", logFile);
-                    // writer.WriteLine("Image download Completed");
+                    //writer.WriteLine("Image added to the ImageList");
+                    WriteToLogFile("Image added to the ImageList", logFile);
+
+                    string currentPath = Directory.GetCurrentDirectory();
+                    DateTime.Now.ToShortDateString();
+
+                    string newPath = DateTime.Now.ToString("dd-MM-yyyy");
+                    WriteToLogFile("New Path Created" + newPath, logFile);
+
+                    if (!Directory.Exists(Path.Combine(currentPath, newPath, DeviceId)))
+                    {
+                        Directory.CreateDirectory(Path.Combine(currentPath, newPath, DeviceId));
+
+                        // writer.WriteLine("Image Folder Created");
+                        WriteToLogFile("Image Folder Created", logFile);
+
+
+                        foreach (string name in ImageList)
+                        {
+                            WebClient webClient = new WebClient();
+                            //string url = "http://180.211.159.172/damweb/PublicPortal/commodity_name/" + name;
+                            //string url = ImageUrl + name;
+                            string url = Url + @"/" + name;
+                            string path = currentPath + @"\" + newPath + @"\" + DeviceId + @"\";
+                            webClient.DownloadFile(url, path + name);
+
+                        }
+                        WriteToLogFile("Image download Completed", logFile);
+                        // writer.WriteLine("Image download Completed");
+
+                    }
+                    else
+                    {
+                        //writer.WriteLine("Image Folder Created");
+
+                        foreach (string name in ImageList)
+                        {
+                            WebClient webClient = new WebClient();
+                            //string url = "http://180.211.159.172/damweb/PublicPortal/commodity_name/" + name;
+                            //string url = ImageUrl + name;
+                            string url = Url + @"/" + name;
+                            string path = currentPath + @"\" + newPath + @"\" + DeviceId + @"\";
+                            webClient.DownloadFile(url, path + name);
+
+                        }
+                        WriteToLogFile("Image download Completed", logFile);
+                        // writer.WriteLine("Image download Completed");
+
+                    }
+
+                    MessageBox.Show("Image Downloaded Successfully For Device : " + DeviceId);
 
                 }
+
                 else
                 {
-                    //writer.WriteLine("Image Folder Created");
+                    //writer.WriteLine("Into the getImageFromWeb Method");
+                    WriteToLogFile("Into the getImageFromWeb Method", logFile);
 
-                    foreach (string name in ImageList)
+
+                    DataTable dt = GetUserPassWordByDeviceId(logInDeviceComBx.SelectedValue);
+                    string source = x.DownloadString(dt.Rows[0]["AreaId"].ToString());
+                    //writer.WriteLine("Download Source using URL");
+                    WriteToLogFile("Download Source using URL", logFile);
+
+                    Url = source;
+                    HtmlAgilityPack.HtmlDocument document = new HtmlAgilityPack.HtmlDocument();
+                    document.LoadHtml(source);
+                    source = x.DownloadString(document.DocumentNode.InnerHtml);
+                    document.LoadHtml(source);
+                    ImageList.Clear();
+
+                    foreach (HtmlNode link in document.DocumentNode.SelectNodes("//a"))
                     {
-                        WebClient webClient = new WebClient();
-                        //string url = "http://180.211.159.172/damweb/PublicPortal/commodity_name/" + name;
-                        //string url = ImageUrl + name;
-                        string url = Url + @"/" + name;
-                        string path = currentPath + @"\" + newPath + @"\" + DeviceId + @"\";
-                        webClient.DownloadFile(url, path + name);
+
+                        if (link.InnerHtml.Contains(".jpeg"))
+                        {
+                            ImageList.Add(link.InnerHtml);
+                        }
 
                     }
-                    WriteToLogFile("Image download Completed", logFile);
-                    // writer.WriteLine("Image download Completed");
+                    //writer.WriteLine("Image added to the ImageList");
+                    WriteToLogFile("Image added to the ImageList", logFile);
+
+                    string currentPath = Directory.GetCurrentDirectory();
+                    DateTime.Now.ToShortDateString();
+
+                    string newPath = DateTime.Now.ToString("dd-MM-yyyy");
+                    WriteToLogFile("New Path Created" + newPath, logFile);
+
+                    if (!Directory.Exists(Path.Combine(currentPath, newPath, logInDeviceComBx.SelectedValue.ToString())))
+                    {
+                        Directory.CreateDirectory(Path.Combine(currentPath, newPath, logInDeviceComBx.SelectedValue.ToString()));
+
+                        // writer.WriteLine("Image Folder Created");
+                        WriteToLogFile("Image Folder Created", logFile);
+
+
+                        foreach (string name in ImageList)
+                        {
+                            WebClient webClient = new WebClient();
+                            //string url = "http://180.211.159.172/damweb/PublicPortal/commodity_name/" + name;
+                            //string url = ImageUrl + name;
+                            string url = Url + @"/" + name;
+                            string path = currentPath + @"\" + newPath + @"\" + DeviceId + @"\";
+                            webClient.DownloadFile(url, path + name);
+
+                        }
+                        WriteToLogFile("Image download Completed", logFile);
+                        // writer.WriteLine("Image download Completed");
+
+                    }
+                    else
+                    {
+                        //writer.WriteLine("Image Folder Created");
+
+                        foreach (string name in ImageList)
+                        {
+                            WebClient webClient = new WebClient();
+                            //string url = "http://180.211.159.172/damweb/PublicPortal/commodity_name/" + name;
+                            //string url = ImageUrl + name;
+                            string url = Url + @"/" + name;
+                            string path = currentPath + @"\" + newPath + @"\" + DeviceId + @"\";
+                            webClient.DownloadFile(url, path + name);
+
+                        }
+                        WriteToLogFile("Image download Completed", logFile);
+                        // writer.WriteLine("Image download Completed");
+
+                    }
+
+                    MessageBox.Show("Image Downloaded Successfully For Device : " + DeviceId);
 
                 }
-
-                MessageBox.Show("Image Downloaded Successfully For Device : " + DeviceId);
-
 
 
             }
             catch (Exception ex)
             {
 
-                MessageBox.Show(ex.ToString());
+                //MessageBox.Show(ex.ToString());
                 // writer.WriteLine("Exception Messege" + ex.ToString());
                 WriteToLogFile("Exception Messege" + ex.ToString(), logFile);
 
@@ -864,188 +1040,378 @@ namespace LEDApp
         {
             try
             {
-
-                int k = 0;
-                int w = 0;
-                int r = 0;
-
-                string[] imageName = new string[50];
-                // string[] WholeSaleImage = new string[50];
-                //string[] RetailImage = new string[50];
-
-                List<string> WholeSaleImage = new List<string>();
-                List<string> RetailImage = new List<string>();
-
-
-                DataTable dt = GetHeightWidth(DeviceId);
-                string currentPath = Directory.GetCurrentDirectory();
-                DateTime.Now.ToShortDateString();
-                string newPath = DateTime.Now.ToString("dd-MM-yyyy");
-                newPath = currentPath + @"\" + newPath + @"\" + DeviceId;
-                string[] filePaths = Directory.GetFiles(newPath, "*.jpeg");
-                Array.Sort(filePaths, StringComparer.InvariantCulture);
-                for (int i = 0; i < filePaths.Length; i++)
+                if (CheckClick) //To Check If its Click or Automated
                 {
-                    imageName[i] = filePaths[i].Replace(newPath, "").ToString();
-                    //string test = imageName[i].Substring(0, 2);
-                    if (imageName[i].Substring(0, 2) == "\\w")
+                    int k = 0;
+                    int w = 0;
+                    int r = 0;
+
+                    string[] imageName = new string[50];
+                    // string[] WholeSaleImage = new string[50];
+                    //string[] RetailImage = new string[50];
+
+                    List<string> WholeSaleImage = new List<string>();
+                    List<string> RetailImage = new List<string>();
+
+
+                    DataTable dt = GetHeightWidth(DeviceId);
+                    string currentPath = Directory.GetCurrentDirectory();
+                    DateTime.Now.ToShortDateString();
+                    string newPath = DateTime.Now.ToString("dd-MM-yyyy");
+                    newPath = currentPath + @"\" + newPath + @"\" + DeviceId;
+                    string[] filePaths = Directory.GetFiles(newPath, "*.jpeg");
+                    Array.Sort(filePaths, StringComparer.InvariantCulture);
+                    for (int i = 0; i < filePaths.Length; i++)
                     {
-                        // WholeSaleImage[w++] = newPath + imageName[i];
-                        WholeSaleImage.Insert(w++, newPath + imageName[i]);
-
-                    }
-                    else
-                    {
-                        RetailImage.Insert(r++, newPath + imageName[i]);
-                        // RetailImage[r++] = newPath + imageName[i];
-                    }
-                }
-
-
-                w = 0;
-                r = 0;
-                //double totalImageCountForRW = RetailImage.Count;
-                //
-                double totalPrograme = ((filePaths.Length) / 16.00);
-                //double totalPrograme = ((filePaths.Length) / totalImageCountForRW);
-                totalPrograme = Math.Ceiling(totalPrograme);
-
-
-
-                //for (int i = 0; i < totalPrograme; i++)
-                //{
-
-                for (int i = 0; i < totalPrograme; i++)
-                {
-
-                    ledcontrol.LEDProgram Program1 = new ledcontrol.LEDProgram();
-
-
-                    Program1.LEDKind = ledcontrol.LEDKind.lkSingle;
-                    // Screen monochrome color Type Single = 0, Double = 1 color, lkMultiple = 2 tricolor,
-                    Program1.ProgramID = 4 + i;
-                    // Program number> = 5 corresponds to the client program number id + 4
-                    Program1.PlayMode = 0; //Broadcast mode
-                    Program1.PlayModeValue = 2; //Show player prev 1
-                    Program1.FromDate = System.Convert.ToDateTime("2000-01-01"); //"2000-01-01";          //Validity start
-                    Program1.ToDate = System.Convert.ToDateTime("2199-01-01");
-                    //"2000-01-01";          //Validity start"2199-01-01";            //有效期结束
-                    Program1.Weeks = "1,2,3,4,5,6,7"; //Play Days Monday to weeks5 :'1,2,3,4,5'
-
-                    Program1.Width = 512; //width
-                    Program1.Height = 96; //height            
-                    Program1.ProgramName = "DAM" + DateTime.Now.ToString("dd") + i; ; //Program Title
-                    Program1.ClearHours(); //Cloudy periods
-                    Program1.AddHours(System.Convert.ToDateTime("00:00"), System.Convert.ToDateTime("23:59")); //Add hours
-                    Program1.IsInsert = false; //Whether spots are generally useless
-                    Program1.IsPlayingTime = false;
-                    Program1.ClearRegions();
-
-
-
-
-
-                    int rgn = 1;
-
-                    for (int m = 0; m < 2; m++)
-                    {
-                        ledcontrol.LEDRegion Region1Top = new ledcontrol.LEDRegion();
-                        Region1Top.RegionId = m + 1; //Partition No.   1~8 
-
-                        Region1Top.Mode = ledcontrol.LEDRegionMode.rmStatic; //default
-
-                        if (rgn == 1)
+                        imageName[i] = filePaths[i].Replace(newPath, "").ToString();
+                        //string test = imageName[i].Substring(0, 2);
+                        if (imageName[i].Substring(0, 2) == "\\w")
                         {
-                            Region1Top.Left = 0;
-                            //Convert.ToInt32(dt.Rows[0]["RegionLeft"].ToString());  
-                            // Left Margin   x
-                            Region1Top.Top = 0;//Convert.ToInt32(dt.Rows[0]["RegionTop"].ToString());  
-                            //rgn = 0;
+                            // WholeSaleImage[w++] = newPath + imageName[i];
+                            WholeSaleImage.Insert(w++, newPath + imageName[i]);
 
                         }
                         else
                         {
-                            Region1Top.Left = 0;//Convert.ToInt32(dt.Rows[0]["Region1Left"].ToString());  
-                            Region1Top.Top = 48;//Convert.ToInt32(dt.Rows[0]["Region1Top"].ToString());  
+                            RetailImage.Insert(r++, newPath + imageName[i]);
+                            // RetailImage[r++] = newPath + imageName[i];
+                        }
+                    }
+
+
+                    w = 0;
+                    r = 0;
+                    //double totalImageCountForRW = RetailImage.Count;
+                    //
+                    double totalPrograme = ((filePaths.Length) / 16.00);
+                    //double totalPrograme = ((filePaths.Length) / totalImageCountForRW);
+                    totalPrograme = Math.Ceiling(totalPrograme);
+
+
+
+                    //for (int i = 0; i < totalPrograme; i++)
+                    //{
+
+                    for (int i = 0; i < totalPrograme; i++)
+                    {
+
+                        ledcontrol.LEDProgram Program1 = new ledcontrol.LEDProgram();
+
+
+                        Program1.LEDKind = ledcontrol.LEDKind.lkSingle;
+                        // Screen monochrome color Type Single = 0, Double = 1 color, lkMultiple = 2 tricolor,
+                        Program1.ProgramID = 4 + i;
+                        // Program number> = 5 corresponds to the client program number id + 4
+                        Program1.PlayMode = 0; //Broadcast mode
+                        Program1.PlayModeValue = 2; //Show player prev 1
+                        Program1.FromDate = System.Convert.ToDateTime("2000-01-01"); //"2000-01-01";          //Validity start
+                        Program1.ToDate = System.Convert.ToDateTime("2199-01-01");
+                        //"2000-01-01";          //Validity start"2199-01-01";            //有效期结束
+                        Program1.Weeks = "1,2,3,4,5,6,7"; //Play Days Monday to weeks5 :'1,2,3,4,5'
+
+                        Program1.Width = 512; //width
+                        Program1.Height = 96; //height            
+                        Program1.ProgramName = "DAM" + DateTime.Now.ToString("dd") + i; ; //Program Title
+                        Program1.ClearHours(); //Cloudy periods
+                        Program1.AddHours(System.Convert.ToDateTime("00:00"), System.Convert.ToDateTime("23:59")); //Add hours
+                        Program1.IsInsert = false; //Whether spots are generally useless
+                        Program1.IsPlayingTime = false;
+                        Program1.ClearRegions();
+
+
+
+
+
+                        int rgn = 1;
+
+                        for (int m = 0; m < 2; m++)
+                        {
+                            ledcontrol.LEDRegion Region1Top = new ledcontrol.LEDRegion();
+                            Region1Top.RegionId = m + 1; //Partition No.   1~8 
+
+                            Region1Top.Mode = ledcontrol.LEDRegionMode.rmStatic; //default
+
+                            if (rgn == 1)
+                            {
+                                Region1Top.Left = 0;
+                                //Convert.ToInt32(dt.Rows[0]["RegionLeft"].ToString());  
+                                // Left Margin   x
+                                Region1Top.Top = 0;//Convert.ToInt32(dt.Rows[0]["RegionTop"].ToString());  
+                                //rgn = 0;
+
+                            }
+                            else
+                            {
+                                Region1Top.Left = 0;//Convert.ToInt32(dt.Rows[0]["Region1Left"].ToString());  
+                                Region1Top.Top = 48;//Convert.ToInt32(dt.Rows[0]["Region1Top"].ToString());  
+
+                            }
+                            //Convert.ToInt32(dt.Rows[0]["RegionTop"].ToString());                           //Top margin    y
+                            Region1Top.Width = 496; //Convert.ToInt32(dt.Rows[0]["Width"].ToString()); //width      w
+                            Region1Top.Height = 48; //Convert.ToInt32(dt.Rows[0]["Height"].ToString());
+
+
+                            if (rgn == 1)
+                            {
+                                rgn = 0;
+                                for (int j = 0; j < 8; j++, w++)
+                                {
+                                    if (w < WholeSaleImage.Count)
+                                    {
+                                        ledcontrol.IPictureElement PicEle = new ledcontrol.PictureElement();
+                                        PicEle.Width = 496;
+                                        PicEle.Height = 48;
+
+                                        //PicEle.Mode = 1;// Image Type
+                                        PicEle.BoderStyle = 0; // Type of border
+                                        PicEle.AnimateStyle = 0; // Animated
+                                        PicEle.AnimateSpeed = 15; // Movement speed
+                                        PicEle.AnimateDelay = 0; // Residence time
+
+                                        //PicEle.LoadFromFile(@filePaths[j]); // Load picture
+                                        //PicEle.LoadFromFile(@"E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\02-04-2016\crop13.png");
+                                        PicEle.LoadFromFile(WholeSaleImage[w]);
+                                        Region1Top.AddElment(PicEle);
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                Program1.AddRegions(Region1Top);
+
+
+                            }
+                            else
+                            {
+                                for (int j = 0; j < 8; j++, r++)
+                                {
+                                    if (r < RetailImage.Count)
+                                    {
+                                        ledcontrol.IPictureElement PicEle = new ledcontrol.PictureElement();
+                                        PicEle.Width = 496;
+                                        PicEle.Height = 48;
+
+                                        //PicEle.Mode = 1;// Image Type
+                                        PicEle.BoderStyle = 0; // Type of border
+                                        PicEle.AnimateStyle = 0; // Animated
+                                        PicEle.AnimateSpeed = 15; // Movement speed
+                                        PicEle.AnimateDelay = 0; // Residence time
+
+                                        //PicEle.LoadFromFile(@filePaths[j]); // Load picture
+                                        //PicEle.LoadFromFile(@"E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\02-04-2016\crop13.png");
+                                        PicEle.LoadFromFile(RetailImage[r]);
+                                        Region1Top.AddElment(PicEle);
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                Program1.AddRegions(Region1Top);
+                            }
 
                         }
-                        //Convert.ToInt32(dt.Rows[0]["RegionTop"].ToString());                           //Top margin    y
-                        Region1Top.Width = 496; //Convert.ToInt32(dt.Rows[0]["Width"].ToString()); //width      w
-                        Region1Top.Height = 48; //Convert.ToInt32(dt.Rows[0]["Height"].ToString());
 
 
-                        if (rgn == 1)
+                        // PLed.SendRamProgram(Program1);
+
+                        PLed.SendProgram(Program1);
+                    }
+
+
+                    //}
+
+                    MessageBox.Show("Data Send Successfully for Device : " + DeviceId); 
+                }
+                else
+                {
+                    int k = 0;
+                    int w = 0;
+                    int r = 0;
+                    //DataTable dt = GetUserPassWordByDeviceId(logInDeviceComBx.SelectedValue);
+                    string[] imageName = new string[50];
+                    // string[] WholeSaleImage = new string[50];
+                    //string[] RetailImage = new string[50];
+
+                    List<string> WholeSaleImage = new List<string>();
+                    List<string> RetailImage = new List<string>();
+
+
+                    DataTable dt = GetUserPassWordByDeviceId(logInDeviceComBx.SelectedValue);
+                    DeviceId = dt.Rows[0]["DeviceId"].ToString();
+
+
+                    string currentPath = Directory.GetCurrentDirectory();
+                    DateTime.Now.ToShortDateString();
+                    string newPath = DateTime.Now.ToString("dd-MM-yyyy");
+                    newPath = currentPath + @"\" + newPath + @"\" + DeviceId;
+                    string[] filePaths = Directory.GetFiles(newPath, "*.jpeg");
+                    Array.Sort(filePaths, StringComparer.InvariantCulture);
+                    for (int i = 0; i < filePaths.Length; i++)
+                    {
+                        imageName[i] = filePaths[i].Replace(newPath, "").ToString();
+                        //string test = imageName[i].Substring(0, 2);
+                        if (imageName[i].Substring(0, 2) == "\\w")
                         {
-                            rgn = 0;
-                            for (int j = 0; j < 8; j++, w++)
-                            {
-                                if (w < WholeSaleImage.Count)
-                                {
-                                    ledcontrol.IPictureElement PicEle = new ledcontrol.PictureElement();
-                                    PicEle.Width = 496;
-                                    PicEle.Height = 48;
-
-                                    //PicEle.Mode = 1;// Image Type
-                                    PicEle.BoderStyle = 0; // Type of border
-                                    PicEle.AnimateStyle = 0; // Animated
-                                    PicEle.AnimateSpeed = 15; // Movement speed
-                                    PicEle.AnimateDelay = 0; // Residence time
-
-                                    //PicEle.LoadFromFile(@filePaths[j]); // Load picture
-                                    //PicEle.LoadFromFile(@"E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\02-04-2016\crop13.png");
-                                    PicEle.LoadFromFile(WholeSaleImage[w]);
-                                    Region1Top.AddElment(PicEle);
-                                }
-                                else
-                                {
-                                    break;
-                                }
-                            }
-                            Program1.AddRegions(Region1Top);
-
+                            // WholeSaleImage[w++] = newPath + imageName[i];
+                            WholeSaleImage.Insert(w++, newPath + imageName[i]);
 
                         }
                         else
                         {
-                            for (int j = 0; j < 8; j++, r++)
-                            {
-                                if (r < RetailImage.Count)
-                                {
-                                    ledcontrol.IPictureElement PicEle = new ledcontrol.PictureElement();
-                                    PicEle.Width = 496;
-                                    PicEle.Height = 48;
-
-                                    //PicEle.Mode = 1;// Image Type
-                                    PicEle.BoderStyle = 0; // Type of border
-                                    PicEle.AnimateStyle = 0; // Animated
-                                    PicEle.AnimateSpeed = 15; // Movement speed
-                                    PicEle.AnimateDelay = 0; // Residence time
-
-                                    //PicEle.LoadFromFile(@filePaths[j]); // Load picture
-                                    //PicEle.LoadFromFile(@"E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\02-04-2016\crop13.png");
-                                    PicEle.LoadFromFile(RetailImage[r]);
-                                    Region1Top.AddElment(PicEle);
-                                }
-                                else
-                                {
-                                    break;
-                                }
-                            }
-                            Program1.AddRegions(Region1Top);
+                            RetailImage.Insert(r++, newPath + imageName[i]);
+                            // RetailImage[r++] = newPath + imageName[i];
                         }
-
                     }
 
 
-                    // PLed.SendRamProgram(Program1);
+                    w = 0;
+                    r = 0;
+                    //double totalImageCountForRW = RetailImage.Count;
+                    //
+                    double totalPrograme = ((filePaths.Length) / 16.00);
+                    //double totalPrograme = ((filePaths.Length) / totalImageCountForRW);
+                    totalPrograme = Math.Ceiling(totalPrograme);
 
-                    PLed.SendProgram(Program1);
+
+
+                    //for (int i = 0; i < totalPrograme; i++)
+                    //{
+
+                    for (int i = 0; i < totalPrograme; i++)
+                    {
+
+                        ledcontrol.LEDProgram Program1 = new ledcontrol.LEDProgram();
+
+
+                        Program1.LEDKind = ledcontrol.LEDKind.lkSingle;
+                        // Screen monochrome color Type Single = 0, Double = 1 color, lkMultiple = 2 tricolor,
+                        Program1.ProgramID = 4 + i;
+                        // Program number> = 5 corresponds to the client program number id + 4
+                        Program1.PlayMode = 0; //Broadcast mode
+                        Program1.PlayModeValue = 2; //Show player prev 1
+                        Program1.FromDate = System.Convert.ToDateTime("2000-01-01"); //"2000-01-01";          //Validity start
+                        Program1.ToDate = System.Convert.ToDateTime("2199-01-01");
+                        //"2000-01-01";          //Validity start"2199-01-01";            //有效期结束
+                        Program1.Weeks = "1,2,3,4,5,6,7"; //Play Days Monday to weeks5 :'1,2,3,4,5'
+
+                        Program1.Width = 512; //width
+                        Program1.Height = 96; //height            
+                        Program1.ProgramName = "DAM" + DateTime.Now.ToString("dd") + i; ; //Program Title
+                        Program1.ClearHours(); //Cloudy periods
+                        Program1.AddHours(System.Convert.ToDateTime("00:00"), System.Convert.ToDateTime("23:59")); //Add hours
+                        Program1.IsInsert = false; //Whether spots are generally useless
+                        Program1.IsPlayingTime = false;
+                        Program1.ClearRegions();
+
+
+
+
+
+                        int rgn = 1;
+
+                        for (int m = 0; m < 2; m++)
+                        {
+                            ledcontrol.LEDRegion Region1Top = new ledcontrol.LEDRegion();
+                            Region1Top.RegionId = m + 1; //Partition No.   1~8 
+
+                            Region1Top.Mode = ledcontrol.LEDRegionMode.rmStatic; //default
+
+                            if (rgn == 1)
+                            {
+                                Region1Top.Left = 0;
+                                //Convert.ToInt32(dt.Rows[0]["RegionLeft"].ToString());  
+                                // Left Margin   x
+                                Region1Top.Top = 0;//Convert.ToInt32(dt.Rows[0]["RegionTop"].ToString());  
+                                //rgn = 0;
+
+                            }
+                            else
+                            {
+                                Region1Top.Left = 0;//Convert.ToInt32(dt.Rows[0]["Region1Left"].ToString());  
+                                Region1Top.Top = 48;//Convert.ToInt32(dt.Rows[0]["Region1Top"].ToString());  
+
+                            }
+                            //Convert.ToInt32(dt.Rows[0]["RegionTop"].ToString());                           //Top margin    y
+                            Region1Top.Width = 496; //Convert.ToInt32(dt.Rows[0]["Width"].ToString()); //width      w
+                            Region1Top.Height = 48; //Convert.ToInt32(dt.Rows[0]["Height"].ToString());
+
+
+                            if (rgn == 1)
+                            {
+                                rgn = 0;
+                                for (int j = 0; j < 8; j++, w++)
+                                {
+                                    if (w < WholeSaleImage.Count)
+                                    {
+                                        ledcontrol.IPictureElement PicEle = new ledcontrol.PictureElement();
+                                        PicEle.Width = 496;
+                                        PicEle.Height = 48;
+
+                                        //PicEle.Mode = 1;// Image Type
+                                        PicEle.BoderStyle = 0; // Type of border
+                                        PicEle.AnimateStyle = 0; // Animated
+                                        PicEle.AnimateSpeed = 15; // Movement speed
+                                        PicEle.AnimateDelay = 0; // Residence time
+
+                                        //PicEle.LoadFromFile(@filePaths[j]); // Load picture
+                                        //PicEle.LoadFromFile(@"E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\02-04-2016\crop13.png");
+                                        PicEle.LoadFromFile(WholeSaleImage[w]);
+                                        Region1Top.AddElment(PicEle);
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                Program1.AddRegions(Region1Top);
+
+
+                            }
+                            else
+                            {
+                                for (int j = 0; j < 8; j++, r++)
+                                {
+                                    if (r < RetailImage.Count)
+                                    {
+                                        ledcontrol.IPictureElement PicEle = new ledcontrol.PictureElement();
+                                        PicEle.Width = 496;
+                                        PicEle.Height = 48;
+
+                                        //PicEle.Mode = 1;// Image Type
+                                        PicEle.BoderStyle = 0; // Type of border
+                                        PicEle.AnimateStyle = 0; // Animated
+                                        PicEle.AnimateSpeed = 15; // Movement speed
+                                        PicEle.AnimateDelay = 0; // Residence time
+
+                                        //PicEle.LoadFromFile(@filePaths[j]); // Load picture
+                                        //PicEle.LoadFromFile(@"E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\02-04-2016\crop13.png");
+                                        PicEle.LoadFromFile(RetailImage[r]);
+                                        Region1Top.AddElment(PicEle);
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                Program1.AddRegions(Region1Top);
+                            }
+
+                        }
+
+
+                        // PLed.SendRamProgram(Program1);
+
+                        PLed.SendProgram(Program1);
+                    }
+
+
+                    //}
+
+                    MessageBox.Show("Data Send Successfully for Device : " + DeviceId); 
                 }
-
-
-                //}
-
-                MessageBox.Show("Data Send Successfully for Device : " + DeviceId);
+               
             }
 
             catch (Exception ex)

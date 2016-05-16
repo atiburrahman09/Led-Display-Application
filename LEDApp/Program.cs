@@ -38,7 +38,7 @@ namespace LEDApp
                 Process p = new Process();
                 p.StartInfo.UseShellExecute = true;
                 p.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
-                //p.StartInfo.FileName = Application.ExecutablePath;
+                p.StartInfo.FileName = Application.ExecutablePath;
                 p.StartInfo.FileName = Assembly.GetExecutingAssembly().CodeBase;
                 p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 //Set the start action, make sure to run as Administrator
@@ -59,7 +59,9 @@ namespace LEDApp
 
                 //Sign out
                 //Process.GetCurrentProcess().Kill();
-                Application.Exit();
+                Application.Run(new HomePage());
+                //System.Diagnostics.Process.GetCurrentProcess().Kill();
+                //Application.Exit();
             }
             //else
             //{
@@ -97,7 +99,7 @@ namespace LEDApp
             //    }
             //    Application.Exit();
             //}
-            Application.Run(new HomePage());
+            //Application.Run(new HomePage());
 
 
            
