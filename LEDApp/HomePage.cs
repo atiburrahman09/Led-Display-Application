@@ -58,19 +58,30 @@ namespace LEDApp
         string connectionString = ConfigurationManager.ConnectionStrings["LumexDBConString"].ConnectionString;
         SqlConnection conn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["AppKey"].ConnectionString);
         string path =  @"C:\temp\ConnectionString.txt";
+        StreamReader streamReader = new StreamReader(@"C:\temp\ConnectionString.txt");
         public HomePage()
         {
             InitializeComponent();
 
             //WriteConnectionStringToLogFile(connectionString, logFile);
-            using (var fs = new FileStream(path, FileMode.Truncate))
+            //using (var fs = new FileStream(path, FileMode.Truncate))
+            //{
+            //}
+            if (new FileInfo(path).Length == 0)
             {
+                // empty
+                StreamWriter objWriter = new StreamWriter(path, true);
+                objWriter.WriteLine(connectionString);
+                objWriter.Close();
             }
+            string line = string.Empty;
+            line = streamReader.ReadToEnd().Replace("\r", "").Replace("\r", ""); 
 
-            StreamWriter objWriter = new StreamWriter(path, true);
-            objWriter.WriteLine(connectionString);
-            objWriter.Close();
-
+            if (connectionString != line)
+            {
+                ConfigurationManager.ConnectionStrings["LumexDBConString"].ConnectionString=line;
+            }
+            streamReader.Close();
 
             string AppKeyStatic = "KxYU-LUm3-Ts34-XSOP";
             string AppKeyFromDB = "";
