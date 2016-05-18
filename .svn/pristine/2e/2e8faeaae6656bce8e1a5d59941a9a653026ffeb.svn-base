@@ -11,14 +11,12 @@
     <add key="Host" value="42.121.6.228" />
     <add key="Port" value="9099" />
     <add key="Url" value="http://180.211.159.172/damweb/PublicPortal/commodity_name/" />
-  </appSettings>
-  <!--<ItemGroup Condition=" ‘$(Configuration)|$(Platform)’ == ‘Debug|AnyCPU’ ">
-    <None Include="app.config" />
-  </ItemGroup>
 
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <None Include="publishedapp.config" />
-  </ItemGroup>-->
+
+    
+
+
+  </appSettings>
   <connectionStrings>
     <!--<add name="LEDApp.Properties.Settings.lmxLEDConnectionString"
             connectionString="Data Source=LUMEX-05-PC;Initial Catalog=lmxLED;User ID=sa Password=shv  321"

@@ -1,0 +1,6 @@
+E:\Atib\Projects\LEDApp\LEDApp\bin\Release\LEDApp.exe.config
+E:\Atib\Projects\LEDApp\LEDApp\obj\Release\Interop.TAPI3Lib.dll
+E:\Atib\Projects\LEDApp\LEDApp\obj\Release\LEDApp.csproj.ResolveComReference.cache
+E:\Atib\Projects\LEDApp\LEDApp\obj\Release\LEDApp.HomePage.resources
+E:\Atib\Projects\LEDApp\LEDApp\obj\Release\LEDApp.Properties.Resources.resources
+E:\Atib\Projects\LEDApp\LEDApp\obj\Release\LEDApp.csproj.GenerateResource.Cache
