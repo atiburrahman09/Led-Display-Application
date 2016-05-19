@@ -27,3 +27,33 @@ F:\LMX Projects\LEDApp\obj\Debug\LEDApp.csproj.GenerateResource.Cache
 F:\LMX Projects\LEDApp\obj\Debug\LEDApp.TrustInfo.xml
 F:\LMX Projects\LEDApp\obj\Debug\LEDApp.exe.manifest
 F:\LMX Projects\LEDApp\obj\Debug\LEDApp.application
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\LEDApp.exe.config
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\Interop.TAPI3Lib.dll
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.csproj.ResolveComReference.cache
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.exe
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.pdb
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\LEDApp.exe.manifest
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\LEDApp.application
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\LEDApp.exe
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\LEDApp.pdb
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Common.Logging.Core.dll
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Common.Logging.dll
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\HtmlAgilityPack.dll
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\microsoft.ink.dll
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Quartz.dll
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\System.Data.SqlServerCe.dll
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Common.Logging.pdb
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Common.Logging.xml
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Common.Logging.Core.pdb
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Common.Logging.Core.xml
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\HtmlAgilityPack.pdb
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\HtmlAgilityPack.xml
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Quartz.pdb
+E:\Atib\Projects\LEDApp\LEDApp\bin\Debug\Quartz.xml
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.csprojResolveAssemblyReference.cache
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.HomePage.resources
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.Properties.Resources.resources
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.csproj.GenerateResource.Cache
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.TrustInfo.xml
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.exe.manifest
+E:\Atib\Projects\LEDApp\LEDApp\obj\Debug\LEDApp.application

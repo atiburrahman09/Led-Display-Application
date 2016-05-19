@@ -76,11 +76,16 @@ namespace LEDApp
             }
             StreamReader streamReader = new StreamReader(@"C:\temp\ConnectionString.txt");
             string line = string.Empty;
-            line = streamReader.ReadToEnd().Replace("\r", "").Replace("\r", "").Replace("\r", ""); 
+            line = streamReader.ReadToEnd().Replace("\r", "").Replace("\n", ""); 
 
             if (connectionString != line)
             {
-                ConfigurationManager.ConnectionStrings["LumexDBConString"].ConnectionString=line;
+                //ConfigurationManager.ConnectionStrings["LumexDBConString"].ConnectionString=line;
+                var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                var connectionStringsSection = (ConnectionStringsSection)config.GetSection("connectionStrings");
+                connectionStringsSection.ConnectionStrings["LumexDBConString"].ConnectionString = line;//"Data Source=blah;Initial Catalog=blah;UID=blah;password=blah";
+                config.Save(ConfigurationSaveMode.Modified, true);
+                ConfigurationManager.RefreshSection("connectionStrings");
             }
             streamReader.Close();
 
@@ -706,7 +711,7 @@ namespace LEDApp
             }
             catch (Exception ex)
             {
-                WriteToLogFile("Error from Clear Data" + ex.ToString(), logFile);
+                WriteToLogFile("Login Failed Due to:" + ex.ToString(), logFile);
                 // throw;
             }
 
@@ -1288,7 +1293,7 @@ namespace LEDApp
                     List<string> RetailImage = new List<string>();
 
 
-                    DataTable dt = GetUserPassWordByDeviceId(logInDeviceComBx.SelectedValue);
+                    DataTable dt = GetHeightWidth(logInDeviceComBx.SelectedValue);
                     DeviceId = dt.Rows[0]["DeviceId"].ToString();
 
 
