@@ -58,7 +58,7 @@ namespace LEDApp
         string connectionString = ConfigurationManager.ConnectionStrings["LumexDBConString"].ConnectionString;
         SqlConnection conn = new SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["AppKey"].ConnectionString);
         string path =  @"C:\temp\ConnectionString.txt";
-        StreamReader streamReader = new StreamReader(@"C:\temp\ConnectionString.txt");
+        
         public HomePage()
         {
             InitializeComponent();
@@ -74,8 +74,9 @@ namespace LEDApp
                 objWriter.WriteLine(connectionString);
                 objWriter.Close();
             }
+            StreamReader streamReader = new StreamReader(@"C:\temp\ConnectionString.txt");
             string line = string.Empty;
-            line = streamReader.ReadToEnd().Replace("\r", "").Replace("\r", ""); 
+            line = streamReader.ReadToEnd().Replace("\r", "").Replace("\r", "").Replace("\r", ""); 
 
             if (connectionString != line)
             {
