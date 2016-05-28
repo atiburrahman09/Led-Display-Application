@@ -154,7 +154,7 @@ namespace LEDApp
             }
             else
             {
-                if (sMacAddress == Mac && AppKeyStatic == AppKeyFromDB && status == "Yes")
+                if (AppKeyStatic == AppKeyFromDB && status == "Yes")
                 {
                     add.SetValue("LEDApp", "\"" + Application.ExecutablePath.ToString() + "\"");
 
@@ -203,7 +203,7 @@ namespace LEDApp
             catch (Exception)
             {
 
-                throw;
+                //throw;
             }
         }
 
@@ -559,26 +559,7 @@ namespace LEDApp
                 }
                 listViewDisplay.Items.Add(item);
             }
-            //SqlDataReader reader = command.ExecuteReader();
-
-
-            //while (dt.Rows.Count > 0)
-            //{
-            //    DisplaySetting displaySetting = new DisplaySetting();
-            //    displaySetting.id = (int)dt.Rows[0]["Id"];
-            //    displaySetting.DeviceId = (int)dt.Rows[0]["DeviceId"];
-            //    displaySetting.Height = dt.Rows[0]["Height"].ToString();
-            //    displaySetting.Width = dt.Rows[0]["Width"].ToString();
-            //    displaySetting.style = dt.Rows[0]["Style"].ToString();
-            //    displaySetting.Animation = dt.Rows[0]["Animation"].ToString();
-
-
-
-            //    displayList.Add(displaySetting);
-
-
-            //}
-
+           
 
         }
 
@@ -711,8 +692,12 @@ namespace LEDApp
             }
             catch (Exception ex)
             {
-                WriteToLogFile("Login Failed Due to:" + ex.ToString(), logFile);
+                WriteToLogFile("Login Failed Due to:" + ex.ToString() +"Trying To Login Again", logFile);
+
                 // throw;
+
+                this.btnLogin.Invoke(new MethodInvoker(() => InvokeOnClick(btnLogin, EventArgs.Empty)));
+                
             }
 
 
@@ -738,7 +723,8 @@ namespace LEDApp
             catch (Exception ex)
             {
                 WriteToLogFile("Error from Clear Data" + ex.ToString(), logFile);
-                // throw;
+                this.btnClearData.Invoke(new MethodInvoker(() => InvokeOnClick(btnClearData, EventArgs.Empty)));
+               
             }
         }
         public List<string> ImageList = new List<string>();
@@ -878,7 +864,7 @@ namespace LEDApp
 
                     }
 
-                    MessageBox.Show("Image Downloaded Successfully For Device : " + DeviceId);
+                   // MessageBox.Show("Image Downloaded Successfully For Device : " + DeviceId);
 
                 }
 
@@ -959,7 +945,7 @@ namespace LEDApp
 
                     }
 
-                    MessageBox.Show("Image Downloaded Successfully For Device : " + DeviceId);
+                   // MessageBox.Show("Image Downloaded Successfully For Device : " + DeviceId);
 
                 }
 
@@ -971,7 +957,9 @@ namespace LEDApp
                 //MessageBox.Show(ex.ToString());
                 // writer.WriteLine("Exception Messege" + ex.ToString());
                 WriteToLogFile("Exception Messege" + ex.ToString(), logFile);
+                this.btnGetImageFromWeb.Invoke(new MethodInvoker(() => InvokeOnClick(btnGetImageFromWeb, EventArgs.Empty)));
 
+               
             }
 
         }
@@ -1069,13 +1057,13 @@ namespace LEDApp
                     // PLed.SendRamProgram(Program1);
                 }
 
-                MessageBox.Show("Data Send Successfully");
+                //MessageBox.Show("Data Send Successfully");
             }
 
             catch (Exception)
             {
 
-                MessageBox.Show("Data Send Failed");
+              //  MessageBox.Show("Data Send Failed");
             }
 
         }
@@ -1277,7 +1265,7 @@ namespace LEDApp
 
                     //}
 
-                    MessageBox.Show("Data Send Successfully for Device : " + DeviceId);
+                    //MessageBox.Show("Data Send Successfully for Device : " + DeviceId);
                 }
                 else
                 {
@@ -1464,7 +1452,7 @@ namespace LEDApp
 
                     //}
 
-                    MessageBox.Show("Data Send Successfully for Device : " + DeviceId);
+                   // MessageBox.Show("Data Send Successfully for Device : " + DeviceId);
                 }
 
             }
@@ -1472,6 +1460,8 @@ namespace LEDApp
             catch (Exception ex)
             {
                 WriteToLogFile("Error from dual data send" + ex.ToString(), logFile);
+
+             this.btnSendDuelLine.Invoke(new MethodInvoker(() => InvokeOnClick(btnSendDuelLine, EventArgs.Empty)));
                 //MessageBox.Show("Data Send Failed");
             }
         }
